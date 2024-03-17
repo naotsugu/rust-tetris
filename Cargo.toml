@@ -2,8 +2,12 @@
 name = "rust-tetris"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "This is a simple implemented of the game Tetris."
+authors = ["Naotsugu Kobayashi <naotsugukobayashi@gmail.com>"]
+homepage = "https://github.com/naotsugu/rust-tetris"
+documentation = "https://github.com/naotsugu/rust-tetris"
+repository = "https://github.com/naotsugu/rust-tetris.git"
+license = "MIT"
 
 [dependencies]
 rand = "0.8.5"
