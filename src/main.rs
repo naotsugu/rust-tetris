@@ -88,19 +88,34 @@ impl Tetromino {
             6 => Tetromino::L, _ => Tetromino::X,
         }
     }
+
+    fn points(&self) -> [[i16; 2]; 4] {
+        match self {
+            Tetromino::S => [[ 0, -1], [0,  0], [-1, 0], [-1, 1]],
+            Tetromino::Z => [[ 0, -1], [0,  0], [ 1, 0], [ 1, 1]],
+            Tetromino::I => [[ 0, -1], [0,  0], [ 0, 1], [ 0, 2]],
+            Tetromino::T => [[-1,  0], [0,  0], [ 1, 0], [ 0, 1]],
+            Tetromino::O => [[ 0,  0], [1,  0], [ 0, 1], [ 1, 1]],
+            Tetromino::J => [[-1, -1], [0, -1], [ 0, 0], [ 0, 1]],
+            Tetromino::L => [[ 1, -1], [0, -1], [ 0, 0], [ 0, 1]],
+            Tetromino::X => [[ 0,  0], [0,  0], [ 0, 0], [ 0, 0]],
+        }
+    }
+
     fn is_rotatable(&self) -> bool {
         !(matches!(self, Tetromino::O) || matches!(self, Tetromino::X))
     }
-    fn color(&self) -> Vec<u8> {
+
+    fn color(&self) -> (u8, u8, u8) {
         match self {
-            Tetromino::S => vec!(204, 102, 102),
-            Tetromino::Z => vec!(102, 204, 102),
-            Tetromino::I => vec!(104, 102, 204),
-            Tetromino::T => vec!(204, 204, 102),
-            Tetromino::O => vec!(204, 102, 204),
-            Tetromino::J => vec!(204, 204, 204),
-            Tetromino::L => vec!(218, 170, 0),
-            _ => vec!(0, 0, 0)
+            Tetromino::S => (204, 102, 102),
+            Tetromino::Z => (102, 204, 102),
+            Tetromino::I => (104, 102, 204),
+            Tetromino::T => (204, 204, 102),
+            Tetromino::O => (204, 102, 204),
+            Tetromino::J => (204, 204, 204),
+            Tetromino::L => (218, 170,   0),
+            _            => (  0,   0,   0)
         }
     }
 }
@@ -119,16 +134,7 @@ impl Block {
     }
 
     fn block(t: Tetromino) -> Block {
-        match t {
-            Tetromino::S => Block { kind: Tetromino::S, points: [[ 0, -1], [0,  0], [-1, 0], [-1, 1]] },
-            Tetromino::Z => Block { kind: Tetromino::Z, points: [[ 0, -1], [0,  0], [ 1, 0], [ 1, 1]] },
-            Tetromino::I => Block { kind: Tetromino::I, points: [[ 0, -1], [0,  0], [ 0, 1], [ 0, 2]] },
-            Tetromino::T => Block { kind: Tetromino::T, points: [[-1,  0], [0,  0], [ 1, 0], [ 0, 1]] },
-            Tetromino::O => Block { kind: Tetromino::O, points: [[ 0,  0], [1,  0], [ 0, 1], [ 1, 1]] },
-            Tetromino::J => Block { kind: Tetromino::J, points: [[-1, -1], [0, -1], [ 0, 0], [ 0, 1]] },
-            Tetromino::L => Block { kind: Tetromino::L, points: [[ 1, -1], [0, -1], [ 0, 0], [ 0, 1]] },
-            Tetromino::X => Block { kind: Tetromino::X, points: [[ 0,  0], [0,  0], [ 0, 0], [ 0, 0]] }
-        }
+        Block { kind: t, points: t.points() }
     }
 
     fn rotate_left(&self) -> Block {
@@ -373,8 +379,8 @@ impl Tetris {
         ).unwrap();
         let path = PathBuilder::from_rect(rect);
         let mut paint = Paint::default();
-        let color = kind.color();
-        paint.set_color_rgba8(color[0], color[1], color[2], 255);
+        let (r ,g, b) = kind.color();
+        paint.set_color_rgba8(r, g, b, 255);
         pixmap.fill_path(
             &path,
             &paint,
