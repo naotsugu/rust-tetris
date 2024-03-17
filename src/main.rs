@@ -75,10 +75,10 @@ fn main() {
     });
 }
 
-// ---------------------------------------------------------
-
+/// Tetromino is a geometric shape composed of four squares, connected orthogonally.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum Tetromino { S,Z,I,T,O,J,L,X, }
+
 impl Tetromino {
     fn rand() -> Tetromino {
         match rand::random::<u8>() % 7 {
@@ -105,6 +105,7 @@ impl Tetromino {
     }
 }
 
+/// A Tetromino block.
 #[derive(Copy, Clone, Debug)]
 struct Block {
     kind: Tetromino,
@@ -165,15 +166,15 @@ impl Block {
 }
 
 #[derive(Debug)]
-struct BlockPoint {
+struct FallingBlock {
     x: i16, y: i16, obj: Block,
 }
 
-impl BlockPoint {
+impl FallingBlock {
 
     fn new() -> Self {
         let block = Block::rand();
-        BlockPoint {
+        FallingBlock {
             x: BOARD_WIDTH / 2 + 1,
             y: BOARD_HEIGHT - 1 + block.min_y(),
             obj: block,
@@ -181,27 +182,27 @@ impl BlockPoint {
     }
 
     fn empty() -> Self {
-        BlockPoint { x: 0, y: 0, obj: Block::block(Tetromino::X) }
+        FallingBlock { x: 0, y: 0, obj: Block::block(Tetromino::X) }
     }
 
-    fn down(&self) -> BlockPoint {
-        BlockPoint { x: self.x, y: self.y - 1, obj: self.obj }
+    fn down(&self) -> FallingBlock {
+        FallingBlock { x: self.x, y: self.y - 1, obj: self.obj }
     }
 
-    fn left(&self) -> BlockPoint {
-        BlockPoint { x: self.x - 1, y: self.y, obj: self.obj }
+    fn left(&self) -> FallingBlock {
+        FallingBlock { x: self.x - 1, y: self.y, obj: self.obj }
     }
 
-    fn right(&self) -> BlockPoint {
-        BlockPoint { x: self.x + 1, y: self.y, obj: self.obj }
+    fn right(&self) -> FallingBlock {
+        FallingBlock { x: self.x + 1, y: self.y, obj: self.obj }
     }
 
-    fn rotate_left(&self)-> BlockPoint {
-        BlockPoint { x: self.x, y: self.y, obj: self.obj.rotate_left() }
+    fn rotate_left(&self)-> FallingBlock {
+        FallingBlock { x: self.x, y: self.y, obj: self.obj.rotate_left() }
     }
 
-    fn rotate_right(&self)-> BlockPoint {
-        BlockPoint { x: self.x, y: self.y, obj: self.obj.rotate_right() }
+    fn rotate_right(&self)-> FallingBlock {
+        FallingBlock { x: self.x, y: self.y, obj: self.obj.rotate_right() }
     }
 
     fn is_empty(&self) -> bool {
@@ -213,6 +214,7 @@ impl BlockPoint {
     }
 }
 
+/// Type of key.
 enum Key { LEFT, RIGHT, UP, DOWN, SP, OTHER, }
 
 const UNIT_SIZE: i16 = 20;
@@ -220,9 +222,10 @@ const BOARD_WIDTH: i16 = 10;
 const BOARD_HEIGHT: i16 = 22;
 const BOARD_LEN: usize = BOARD_WIDTH as usize * BOARD_HEIGHT as usize;
 
+/// Game of tetris.
 struct Tetris {
     board: [Tetromino; BOARD_LEN],
-    current: BlockPoint,
+    current: FallingBlock,
     stopped: bool,
     time: SystemTime,
     score: u32,
@@ -233,7 +236,7 @@ impl Tetris {
     fn new() -> Self {
         Tetris {
             board: [Tetromino::X; BOARD_LEN],
-            current: BlockPoint::empty(),
+            current: FallingBlock::empty(),
             stopped: false,
             time: SystemTime::now(),
             score: 0,
@@ -242,7 +245,7 @@ impl Tetris {
 
     fn rerun(&mut self) {
         self.board = [Tetromino::X; BOARD_LEN];
-        self.current = BlockPoint::empty();
+        self.current = FallingBlock::empty();
         self.stopped = false;
         self.time = SystemTime::now();
         self.score = 0;
@@ -299,12 +302,12 @@ impl Tetris {
     }
 
     fn put_block(&mut self) {
-        if self.try_move(BlockPoint::new()) == false {
+        if self.try_move(FallingBlock::new()) == false {
             self.stopped = true;
         }
     }
 
-    fn try_move(&mut self, block: BlockPoint) -> bool {
+    fn try_move(&mut self, block: FallingBlock) -> bool {
         for i in 0..4 {
             let (x, y) = block.point(i);
             if x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT {
@@ -339,7 +342,7 @@ impl Tetris {
             }
         }
         self.score += line_count * line_count;
-        self.current = BlockPoint::empty();
+        self.current = FallingBlock::empty();
     }
 
     fn shape_at(&self, x: i16, y: i16) -> Tetromino {
