@@ -77,11 +77,11 @@ fn main() {
 
 /// Tetromino is a geometric shape composed of four squares, connected orthogonally.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum Tetromino { S,Z,I,T,O,J,L,X, }
+enum Tetromino { S, Z, I, T, O, J, L, X, }
 
 impl Tetromino {
     fn rand() -> Tetromino {
-        match rand::random::<u8>() % 7 {
+        match rand::random::<u16>() % 7 {
             0 => Tetromino::S, 1 => Tetromino::Z,
             2 => Tetromino::I, 3 => Tetromino::T,
             4 => Tetromino::O, 5 => Tetromino::J,
