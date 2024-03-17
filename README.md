@@ -18,6 +18,6 @@ cargo run
 * `ArrowUp` `ArrowDown` - Rotate block
 * `Space` - Drop block to bottom of board
 * Other Keys - Drop block
-* `r` - Retry game
+* `ESC` - Retry
 
 

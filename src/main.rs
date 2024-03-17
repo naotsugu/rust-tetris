@@ -3,7 +3,7 @@ use winit::event_loop::{ ControlFlow, EventLoop };
 use winit::window::WindowBuilder;
 use tiny_skia::{ FillRule, Paint, PathBuilder, Pixmap, Rect, Transform };
 use winit::keyboard::{ Key::Named, NamedKey };
-use std::time::{Duration, SystemTime};
+use std::time::{ Duration, SystemTime };
 
 fn main() {
 
@@ -28,17 +28,16 @@ fn main() {
             Event::WindowEvent {
                 event: WindowEvent::KeyboardInput {event, .. },
                 ..
-            } => {
-                if event.state.is_pressed() {
-                    match event.logical_key {
-                        Named(NamedKey::ArrowRight) => game.key_pressed(Key::RIGHT),
-                        Named(NamedKey::ArrowLeft) => game.key_pressed(Key::LEFT),
-                        Named(NamedKey::ArrowDown) => game.key_pressed(Key::DOWN),
-                        Named(NamedKey::ArrowUp) => game.key_pressed(Key::UP),
-                        Named(NamedKey::Space) => game.key_pressed(Key::SP),
-                        _ => game.key_pressed(Key::OTHER),
-                    };
-                }
+            } if event.state.is_pressed() => {
+                match event.logical_key {
+                    Named(NamedKey::ArrowRight) => game.key_pressed(Key::RIGHT),
+                    Named(NamedKey::ArrowLeft) => game.key_pressed(Key::LEFT),
+                    Named(NamedKey::ArrowDown) => game.key_pressed(Key::DOWN),
+                    Named(NamedKey::ArrowUp) => game.key_pressed(Key::UP),
+                    Named(NamedKey::Space) => game.key_pressed(Key::SP),
+                    Named(NamedKey::Escape) => game.rerun(),
+                    _ => game.key_pressed(Key::OTHER),
+                };
                 window.request_redraw();
             },
             Event::AboutToWait => {
@@ -239,6 +238,14 @@ impl Tetris {
             time: SystemTime::now(),
             score: 0,
         }
+    }
+
+    fn rerun(&mut self) {
+        self.board = [Tetromino::X; BOARD_LEN];
+        self.current = BlockPoint::empty();
+        self.stopped = false;
+        self.time = SystemTime::now();
+        self.score = 0;
     }
 
     fn tick(&mut self) {
