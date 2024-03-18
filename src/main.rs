@@ -145,7 +145,7 @@ impl Block {
             }
             Block { points, ..*self }
         } else {
-            self.clone()
+            *self
         }
     }
 
@@ -157,7 +157,7 @@ impl Block {
             }
             Block { points, ..*self }
         } else {
-            self.clone()
+            *self
         }
     }
 
