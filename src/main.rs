@@ -223,6 +223,7 @@ const UNIT_SIZE: i16 = 20;
 const BOARD_WIDTH: i16 = 10;
 const BOARD_HEIGHT: i16 = 22;
 const BOARD_LEN: usize = BOARD_WIDTH as usize * BOARD_HEIGHT as usize;
+fn index_at(x: i16, y: i16) -> usize { (y * BOARD_WIDTH + x) as usize }
 
 /// Game of tetris.
 struct Tetris {
@@ -294,8 +295,7 @@ impl Tetris {
     fn block_dropped(&mut self) {
         for i in 0..4 {
             let (x, y) = self.current.point(i);
-            let index = (y * BOARD_WIDTH + x) as usize;
-            self.board[index] = self.current.obj.kind;
+            self.board[index_at(x, y)] = self.current.obj.kind;
         }
         self.remove_complete_lines();
         if self.current.is_empty() {
@@ -313,7 +313,7 @@ impl Tetris {
             if x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT {
                 return false
             }
-            if self.shape_at(x, y) != Tetromino::X {
+            if self.board[index_at(x, y)] != Tetromino::X {
                 return false
             }
         }
@@ -327,7 +327,7 @@ impl Tetris {
         for i in (0..BOARD_HEIGHT).rev() {
             let mut complete = true;
             for x in 0.. BOARD_WIDTH {
-                if self.shape_at(x, i) == Tetromino::X {
+                if self.board[index_at(x, i)] == Tetromino::X {
                     complete = false;
                     break
                 }
@@ -336,17 +336,13 @@ impl Tetris {
                 line_count += 1;
                 for y in i..BOARD_HEIGHT - 1 {
                     for x in 0..BOARD_WIDTH {
-                        self.board[(y * BOARD_WIDTH + x) as usize] = self.shape_at(x, y + 1);
+                        self.board[index_at(x, y)] = self.board[index_at(x, y + 1)];
                     }
                 }
             }
         }
         self.score += line_count * line_count;
         self.current = FallingBlock::empty();
-    }
-
-    fn shape_at(&self, x: i16, y: i16) -> Tetromino {
-        self.board[(y * BOARD_WIDTH + x) as usize]
     }
 
     fn draw(&self, pixmap: &mut Pixmap) {
@@ -356,7 +352,7 @@ impl Tetris {
                     pixmap,
                     x * UNIT_SIZE,
                     y * UNIT_SIZE,
-                    self.shape_at(x, BOARD_HEIGHT - y - 1));
+                    self.board[index_at(x, BOARD_HEIGHT - y - 1)]);
             }
         }
 
@@ -392,5 +388,5 @@ impl Tetris {
             None,
         );
     }
-
 }
+
