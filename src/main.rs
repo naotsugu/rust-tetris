@@ -4,6 +4,7 @@ use winit::window::WindowBuilder;
 use tiny_skia::{ FillRule, Paint, PathBuilder, Pixmap, Rect, Transform };
 use winit::keyboard::{ Key::Named, NamedKey };
 use std::time::{ Duration, SystemTime };
+use rand::Rng;
 
 fn main() {
 
@@ -81,7 +82,7 @@ enum Tetromino { S, Z, I, T, O, J, L, X, }
 
 impl Tetromino {
     fn rand() -> Tetromino {
-        match rand::random::<u16>() % 7 {
+        match rand::thread_rng().gen_range(0..7) {
             0 => Tetromino::S, 1 => Tetromino::Z,
             2 => Tetromino::I, 3 => Tetromino::T,
             4 => Tetromino::O, 5 => Tetromino::J,
@@ -137,11 +138,15 @@ impl Block {
         Block { kind: t, points: t.points() }
     }
 
-    fn rotate_left(&self) -> Block {
+    fn rotate(&self, clockwise: bool) -> Block {
         if self.kind.is_rotatable() {
             let mut points: [[i16; 2]; 4] = [[0; 2]; 4];
             for i in 0..4 {
-                points[i] = [self.points[i][1], -self.points[i][0]];
+                points[i] = if clockwise {
+                    [-self.points[i][1], self.points[i][0]]
+                } else {
+                    [self.points[i][1], -self.points[i][0]]
+                };
             }
             Block { points, ..*self }
         } else {
@@ -149,16 +154,12 @@ impl Block {
         }
     }
 
+    fn rotate_left(&self) -> Block {
+        self.rotate(false)
+    }
+
     fn rotate_right(&self) -> Block {
-        if self.kind.is_rotatable() {
-            let mut points: [[i16; 2]; 4] = [[0; 2]; 4];
-            for i in 0..4 {
-                points[i] = [-self.points[i][1], self.points[i][0]];
-            }
-            Block { points, ..*self }
-        } else {
-            *self
-        }
+        self.rotate(true)
     }
 
     fn min_y(&self) -> i16 {
