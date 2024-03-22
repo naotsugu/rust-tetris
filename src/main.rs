@@ -6,12 +6,16 @@ use winit::keyboard::{ Key::Named, NamedKey };
 use std::time::{ Duration, SystemTime };
 use rand::Rng;
 
+const UNIT_SIZE: i32 = 20;
+const BOARD_WIDTH: i32 = 10;
+const BOARD_HEIGHT: i32 = 22;
+
 fn main() {
 
     let event_loop = EventLoop::new().unwrap();
 
     let window = WindowBuilder::new()
-        .with_inner_size(winit::dpi::LogicalSize::new(200, 440))
+        .with_inner_size(winit::dpi::LogicalSize::new(BOARD_WIDTH * UNIT_SIZE, BOARD_HEIGHT * UNIT_SIZE))
         .with_title("Tetris")
         .build(&event_loop).unwrap();
 
@@ -90,16 +94,16 @@ impl Tetromino {
         }
     }
 
-    fn points(&self) -> [[i16; 2]; 4] {
+    fn points(&self) -> [[i32; 2]; 4] {
         match self {
-            Tetromino::S => [[ 0, -1], [0,  0], [-1, 0], [-1, 1]],
-            Tetromino::Z => [[ 0, -1], [0,  0], [ 1, 0], [ 1, 1]],
-            Tetromino::I => [[ 0, -1], [0,  0], [ 0, 1], [ 0, 2]],
-            Tetromino::T => [[-1,  0], [0,  0], [ 1, 0], [ 0, 1]],
-            Tetromino::O => [[ 0,  0], [1,  0], [ 0, 1], [ 1, 1]],
-            Tetromino::J => [[-1, -1], [0, -1], [ 0, 0], [ 0, 1]],
-            Tetromino::L => [[ 1, -1], [0, -1], [ 0, 0], [ 0, 1]],
-            Tetromino::X => [[ 0,  0], [0,  0], [ 0, 0], [ 0, 0]],
+            Tetromino::S => [[ 0, -1], [0,  0], [-1, 0], [-1,  1]],
+            Tetromino::Z => [[ 0, -1], [0,  0], [ 1, 0], [ 1,  1]],
+            Tetromino::I => [[ 0, -1], [0,  0], [ 0, 1], [ 0,  2]],
+            Tetromino::T => [[-1,  0], [0,  0], [ 1, 0], [ 0, -1]],
+            Tetromino::O => [[ 0,  0], [1,  0], [ 0, 1], [ 1,  1]],
+            Tetromino::J => [[-1, -1], [0, -1], [ 0, 0], [ 0,  1]],
+            Tetromino::L => [[ 1, -1], [0, -1], [ 0, 0], [ 0,  1]],
+            Tetromino::X => [[ 0,  0], [0,  0], [ 0, 0], [ 0,  0]],
         }
     }
 
@@ -125,7 +129,7 @@ impl Tetromino {
 #[derive(Copy, Clone, Debug)]
 struct Block {
     kind: Tetromino,
-    points: [[i16; 2]; 4],
+    points: [[i32; 2]; 4],
 }
 
 impl Block {
@@ -140,7 +144,7 @@ impl Block {
 
     fn rotate(&self, clockwise: bool) -> Block {
         if self.kind.is_rotatable() {
-            let mut points: [[i16; 2]; 4] = [[0; 2]; 4];
+            let mut points: [[i32; 2]; 4] = [[0; 2]; 4];
             for i in 0..4 {
                 points[i] = if clockwise {
                     [-self.points[i][1], self.points[i][0]]
@@ -162,15 +166,15 @@ impl Block {
         self.rotate(true)
     }
 
-    fn min_y(&self) -> i16 {
-        self.points.iter().min_by_key(|p| p[1]).unwrap()[1]
+    fn max_y(&self) -> i32 {
+        self.points.iter().max_by_key(|p| p[1]).unwrap()[1]
     }
 
 }
 
 #[derive(Debug)]
 struct FallingBlock {
-    x: i16, y: i16, obj: Block,
+    x: i32, y: i32, obj: Block,
 }
 
 impl FallingBlock {
@@ -179,7 +183,7 @@ impl FallingBlock {
         let obj = Block::rand();
         FallingBlock {
             x: BOARD_WIDTH / 2,
-            y: BOARD_HEIGHT - 1 + obj.min_y(),
+            y: (BOARD_HEIGHT - 1) - obj.max_y(),
             obj,
         }
     }
@@ -212,19 +216,16 @@ impl FallingBlock {
         self.obj.kind == Tetromino::X
     }
 
-    fn point(&self, i: usize) -> (i16, i16) {
-        (self.x + self.obj.points[i][0], self.y - self.obj.points[i][1])
+    fn point(&self, i: usize) -> (i32, i32) {
+        (self.x + self.obj.points[i][0], self.y + self.obj.points[i][1])
     }
 }
 
 /// Type of key.
 enum Key { LEFT, RIGHT, UP, DOWN, SP, OTHER, }
 
-const UNIT_SIZE: i16 = 20;
-const BOARD_WIDTH: i16 = 10;
-const BOARD_HEIGHT: i16 = 22;
 const BOARD_LEN: usize = BOARD_WIDTH as usize * BOARD_HEIGHT as usize;
-fn index_at(x: i16, y: i16) -> usize { (y * BOARD_WIDTH + x) as usize }
+fn index_at(x: i32, y: i32) -> usize { (y * BOARD_WIDTH + x) as usize }
 
 /// Game of tetris.
 struct Tetris {
@@ -367,7 +368,7 @@ impl Tetris {
         }
     }
 
-    fn draw_square(pixmap: &mut Pixmap, x: i16, y: i16, kind: Tetromino) {
+    fn draw_square(pixmap: &mut Pixmap, x: i32, y: i32, kind: Tetromino) {
         if kind == Tetromino::X {
             return;
         }
