@@ -1,18 +1,21 @@
 use winit::event::{ Event, WindowEvent };
 use winit::event_loop::{ ControlFlow, EventLoop };
 use winit::window::WindowBuilder;
-use tiny_skia::{ FillRule, Paint, PathBuilder, Pixmap, Rect, Transform };
 use winit::keyboard::{ Key::Named, NamedKey };
+use tiny_skia::{ FillRule, Paint, PathBuilder, Pixmap, Rect, Transform };
 use std::time::{ Duration, SystemTime };
-use rand::Rng;
 
 const UNIT_SIZE: i32 = 20;
 const BOARD_WIDTH: i32 = 10;
 const BOARD_HEIGHT: i32 = 22;
 
+/// Type of the key.
+enum Key { LEFT, RIGHT, UP, DOWN, SP, OTHER, }
+
 fn main() {
 
     let event_loop = EventLoop::new().unwrap();
+    event_loop.set_control_flow(ControlFlow::Poll);
 
     let window = WindowBuilder::new()
         .with_inner_size(winit::dpi::LogicalSize::new(BOARD_WIDTH * UNIT_SIZE, BOARD_HEIGHT * UNIT_SIZE))
@@ -22,8 +25,6 @@ fn main() {
     let window = std::rc::Rc::new(window);
     let context = softbuffer::Context::new(window.clone()).unwrap();
     let mut surface = softbuffer::Surface::new(&context, window.clone()).unwrap();
-
-    event_loop.set_control_flow(ControlFlow::Poll);
 
     let mut game: Tetris = Tetris::new();
 
@@ -36,11 +37,11 @@ fn main() {
             } if event.state.is_pressed() => {
                 match event.logical_key {
                     Named(NamedKey::ArrowRight) => game.key_pressed(Key::RIGHT),
-                    Named(NamedKey::ArrowLeft) => game.key_pressed(Key::LEFT),
-                    Named(NamedKey::ArrowDown) => game.key_pressed(Key::DOWN),
-                    Named(NamedKey::ArrowUp) => game.key_pressed(Key::UP),
-                    Named(NamedKey::Space) => game.key_pressed(Key::SP),
-                    Named(NamedKey::Escape) => game.rerun(),
+                    Named(NamedKey::ArrowLeft)  => game.key_pressed(Key::LEFT),
+                    Named(NamedKey::ArrowDown)  => game.key_pressed(Key::DOWN),
+                    Named(NamedKey::ArrowUp)    => game.key_pressed(Key::UP),
+                    Named(NamedKey::Space)      => game.key_pressed(Key::SP),
+                    Named(NamedKey::Escape)     => game.rerun(),
                     _ => game.key_pressed(Key::OTHER),
                 };
                 window.request_redraw();
@@ -86,7 +87,7 @@ enum Tetromino { S, Z, I, T, O, J, L, X, }
 
 impl Tetromino {
     fn rand() -> Tetromino {
-        match rand::thread_rng().gen_range(0..7) {
+        match rand::random::<u32>() % 7 {
             0 => Tetromino::S, 1 => Tetromino::Z,
             2 => Tetromino::I, 3 => Tetromino::T,
             4 => Tetromino::O, 5 => Tetromino::J,
@@ -221,15 +222,13 @@ impl FallingBlock {
     }
 }
 
-/// Type of key.
-enum Key { LEFT, RIGHT, UP, DOWN, SP, OTHER, }
-
-const BOARD_LEN: usize = BOARD_WIDTH as usize * BOARD_HEIGHT as usize;
-fn index_at(x: i32, y: i32) -> usize { (y * BOARD_WIDTH + x) as usize }
+fn index_at(x: i32, y: i32) -> usize {
+    (y * BOARD_WIDTH + x) as usize
+}
 
 /// Game of tetris.
 struct Tetris {
-    board: [Tetromino; BOARD_LEN],
+    board: [Tetromino; (BOARD_WIDTH  * BOARD_HEIGHT) as usize],
     current: FallingBlock,
     stopped: bool,
     time: SystemTime,
@@ -240,7 +239,7 @@ impl Tetris {
 
     fn new() -> Self {
         Tetris {
-            board: [Tetromino::X; BOARD_LEN],
+            board: [Tetromino::X; (BOARD_WIDTH  * BOARD_HEIGHT) as usize],
             current: FallingBlock::empty(),
             stopped: false,
             time: SystemTime::now(),
@@ -249,7 +248,7 @@ impl Tetris {
     }
 
     fn rerun(&mut self) {
-        self.board = [Tetromino::X; BOARD_LEN];
+        self.board = [Tetromino::X; (BOARD_WIDTH  * BOARD_HEIGHT) as usize];
         self.current = FallingBlock::empty();
         self.stopped = false;
         self.time = SystemTime::now();
@@ -326,19 +325,22 @@ impl Tetris {
     fn remove_complete_lines(&mut self) {
         let mut line_count = 0;
 
-        for i in (0..BOARD_HEIGHT).rev() {
+        for y in (0..BOARD_HEIGHT).rev() {
             let mut complete = true;
             for x in 0.. BOARD_WIDTH {
-                if self.board[index_at(x, i)] == Tetromino::X {
+                if self.board[index_at(x, y)] == Tetromino::X {
+                    // traverse the rows and if there is a blank, it cannot be completed
                     complete = false;
                     break
                 }
             }
             if complete {
                 line_count += 1;
-                for y in i..BOARD_HEIGHT - 1 {
+                // drop the line above the completed line
+                for dy in y..BOARD_HEIGHT - 1 {
                     for x in 0..BOARD_WIDTH {
-                        self.board[index_at(x, y)] = self.board[index_at(x, y + 1)];
+                        // copy from the above line
+                        self.board[index_at(x, dy)] = self.board[index_at(x, dy + 1)];
                     }
                 }
             }
@@ -350,21 +352,12 @@ impl Tetris {
     fn draw(&self, pixmap: &mut Pixmap) {
         for y in 0..BOARD_HEIGHT {
             for x in 0..BOARD_WIDTH {
-                Tetris::draw_square(
-                    pixmap,
-                    x * UNIT_SIZE,
-                    y * UNIT_SIZE,
-                    self.board[index_at(x, BOARD_HEIGHT - y - 1)]);
+                Tetris::draw_square(pixmap, x, y,self.board[index_at(x, y)]);
             }
         }
-
         for i in 0..4 {
             let (x, y) = self.current.point(i);
-            Tetris::draw_square(
-                pixmap,
-                x * UNIT_SIZE,
-                (BOARD_HEIGHT - y - 1) * UNIT_SIZE,
-                self.current.obj.kind);
+            Tetris::draw_square(pixmap, x, y, self.current.obj.kind);
         }
     }
 
@@ -372,6 +365,11 @@ impl Tetris {
         if kind == Tetromino::X {
             return;
         }
+
+        // left-bottom to top-left
+        let x = x * UNIT_SIZE;
+        let y = (BOARD_HEIGHT - 1 - y) * UNIT_SIZE;
+
         let rect = Rect::from_xywh(
             (x + 1) as f32,
             (y + 1) as f32,
