@@ -104,12 +104,8 @@ impl Tetromino {
             Tetromino::O => [[ 0,  0], [1,  0], [ 0, 1], [ 1,  1]],
             Tetromino::J => [[-1, -1], [0, -1], [ 0, 0], [ 0,  1]],
             Tetromino::L => [[ 1, -1], [0, -1], [ 0, 0], [ 0,  1]],
-            Tetromino::X => [[ 0,  0], [0,  0], [ 0, 0], [ 0,  0]],
+            Tetromino::X => [[0; 2]; 4],
         }
-    }
-
-    fn is_rotatable(&self) -> bool {
-        !(matches!(self, Tetromino::O) || matches!(self, Tetromino::X))
     }
 
     fn color(&self) -> (u8, u8, u8) {
@@ -144,19 +140,15 @@ impl Block {
     }
 
     fn rotate(&self, clockwise: bool) -> Block {
-        if self.kind.is_rotatable() {
-            let mut points: [[i32; 2]; 4] = [[0; 2]; 4];
-            for i in 0..4 {
-                points[i] = if clockwise {
-                    [-self.points[i][1], self.points[i][0]]
-                } else {
-                    [self.points[i][1], -self.points[i][0]]
-                };
-            }
-            Block { points, ..*self }
-        } else {
-            *self
+        let mut points: [[i32; 2]; 4] = [[0; 2]; 4];
+        for i in 0..4 {
+            points[i] = if clockwise {
+                [-self.points[i][1], self.points[i][0]]
+            } else {
+                [self.points[i][1], -self.points[i][0]]
+            };
         }
+        Block { points, ..*self }
     }
 
     fn rotate_left(&self) -> Block {
