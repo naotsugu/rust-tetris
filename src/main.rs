@@ -86,7 +86,7 @@ fn main() {
 enum Tetromino { S, Z, I, T, O, J, L, X, }
 
 impl Tetromino {
-    fn rand() -> Tetromino {
+    fn rand() -> Self {
         match rand::random::<u32>() % 7 {
             0 => Tetromino::S, 1 => Tetromino::Z,
             2 => Tetromino::I, 3 => Tetromino::T,
