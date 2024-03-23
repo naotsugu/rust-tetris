@@ -95,7 +95,7 @@ impl Tetromino {
         }
     }
 
-    fn points(&self) -> [[i32; 2]; 4] {
+    fn shape(&self) -> [[i32; 2]; 4] {
         match self {
             Tetromino::S => [[ 0, -1], [0,  0], [-1, 0], [-1,  1]],
             Tetromino::Z => [[ 0, -1], [0,  0], [ 1, 0], [ 1,  1]],
@@ -127,17 +127,40 @@ impl Tetromino {
 struct Block {
     kind: Tetromino,
     points: [[i32; 2]; 4],
+    x: i32, y: i32,
 }
 
 impl Block {
 
-    fn rand() -> Block {
-        Block::block(Tetromino::rand())
+    fn new(x: i32, y: i32) -> Self {
+        let kind = Tetromino::rand();
+        Block {
+            kind,
+            points: kind.shape(),
+            x,
+            y: y  - kind.shape().iter().max_by_key(|p| p[1]).unwrap()[1],
+        }
     }
 
-    fn block(t: Tetromino) -> Block {
-        Block { kind: t, points: t.points() }
+    fn empty() -> Self {
+        let kind = Tetromino::X;
+        Block { kind, points: kind.shape(), x: 0, y: 0 }
     }
+
+    fn is_empty(&self) -> bool {
+        self.kind == Tetromino::X
+    }
+
+    fn point(&self, i: usize) -> (i32, i32) {
+        (self.x + self.points[i][0], self.y + self.points[i][1])
+    }
+
+    fn left(&self)  -> Block { Block { x: self.x - 1, ..*self } }
+    fn right(&self) -> Block { Block { x: self.x + 1, ..*self } }
+    fn down(&self)  -> Block { Block { y: self.y - 1, ..*self } }
+
+    fn rotate_left(&self)  -> Block { self.rotate(false) }
+    fn rotate_right(&self) -> Block { self.rotate(true) }
 
     fn rotate(&self, clockwise: bool) -> Block {
         let mut points: [[i32; 2]; 4] = [[0; 2]; 4];
@@ -151,68 +174,8 @@ impl Block {
         Block { points, ..*self }
     }
 
-    fn rotate_left(&self) -> Block {
-        self.rotate(false)
-    }
-
-    fn rotate_right(&self) -> Block {
-        self.rotate(true)
-    }
-
-    fn max_y(&self) -> i32 {
-        self.points.iter().max_by_key(|p| p[1]).unwrap()[1]
-    }
-
 }
 
-#[derive(Debug)]
-struct FallingBlock {
-    x: i32, y: i32, obj: Block,
-}
-
-impl FallingBlock {
-
-    fn new() -> Self {
-        let obj = Block::rand();
-        FallingBlock {
-            x: BOARD_WIDTH / 2,
-            y: (BOARD_HEIGHT - 1) - obj.max_y(),
-            obj,
-        }
-    }
-
-    fn empty() -> Self {
-        FallingBlock { x: 0, y: 0, obj: Block::block(Tetromino::X) }
-    }
-
-    fn down(&self) -> FallingBlock {
-        FallingBlock { y: self.y - 1, ..*self }
-    }
-
-    fn left(&self) -> FallingBlock {
-        FallingBlock { x: self.x - 1, ..*self }
-    }
-
-    fn right(&self) -> FallingBlock {
-        FallingBlock { x: self.x + 1, ..*self }
-    }
-
-    fn rotate_left(&self) -> FallingBlock {
-        FallingBlock { obj: self.obj.rotate_left(), ..*self }
-    }
-
-    fn rotate_right(&self) -> FallingBlock {
-        FallingBlock { obj: self.obj.rotate_right(), ..*self }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.obj.kind == Tetromino::X
-    }
-
-    fn point(&self, i: usize) -> (i32, i32) {
-        (self.x + self.obj.points[i][0], self.y + self.obj.points[i][1])
-    }
-}
 
 fn index_at(x: i32, y: i32) -> usize {
     (y * BOARD_WIDTH + x) as usize
@@ -221,7 +184,7 @@ fn index_at(x: i32, y: i32) -> usize {
 /// Game of tetris.
 struct Tetris {
     board: [Tetromino; (BOARD_WIDTH  * BOARD_HEIGHT) as usize],
-    current: FallingBlock,
+    current: Block,
     stopped: bool,
     time: SystemTime,
     score: u32,
@@ -232,7 +195,7 @@ impl Tetris {
     fn new() -> Self {
         Tetris {
             board: [Tetromino::X; (BOARD_WIDTH  * BOARD_HEIGHT) as usize],
-            current: FallingBlock::empty(),
+            current: Block::empty(),
             stopped: false,
             time: SystemTime::now(),
             score: 0,
@@ -241,7 +204,7 @@ impl Tetris {
 
     fn rerun(&mut self) {
         self.board = [Tetromino::X; (BOARD_WIDTH  * BOARD_HEIGHT) as usize];
-        self.current = FallingBlock::empty();
+        self.current = Block::empty();
         self.stopped = false;
         self.time = SystemTime::now();
         self.score = 0;
@@ -288,7 +251,7 @@ impl Tetris {
     fn block_dropped(&mut self) {
         for i in 0..4 {
             let (x, y) = self.current.point(i);
-            self.board[index_at(x, y)] = self.current.obj.kind;
+            self.board[index_at(x, y)] = self.current.kind;
         }
         self.remove_complete_lines();
         if self.current.is_empty() {
@@ -297,10 +260,10 @@ impl Tetris {
     }
 
     fn put_block(&mut self) {
-        self.stopped = !self.try_move(FallingBlock::new());
+        self.stopped = !self.try_move(Block::new(BOARD_WIDTH / 2, BOARD_HEIGHT - 1));
     }
 
-    fn try_move(&mut self, block: FallingBlock) -> bool {
+    fn try_move(&mut self, block: Block) -> bool {
         for i in 0..4 {
             let (x, y) = block.point(i);
             if x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT {
@@ -338,7 +301,7 @@ impl Tetris {
             }
         }
         self.score += line_count * line_count;
-        self.current = FallingBlock::empty();
+        self.current = Block::empty();
     }
 
     fn draw(&self, pixmap: &mut Pixmap) {
@@ -349,7 +312,7 @@ impl Tetris {
         }
         for i in 0..4 {
             let (x, y) = self.current.point(i);
-            Tetris::draw_square(pixmap, x, y, self.current.obj.kind);
+            Tetris::draw_square(pixmap, x, y, self.current.kind);
         }
     }
 
