@@ -159,16 +159,16 @@ impl Block {
     fn right(&self) -> Block { Block { x: self.x + 1, ..*self } }
     fn down(&self)  -> Block { Block { y: self.y - 1, ..*self } }
 
-    fn rotate_left(&self)  -> Block { self.rotate(false) }
     fn rotate_right(&self) -> Block { self.rotate(true) }
+    fn rotate_left(&self)  -> Block { self.rotate(false) }
 
     fn rotate(&self, clockwise: bool) -> Block {
         let mut points: [[i32; 2]; 4] = [[0; 2]; 4];
         for i in 0..4 {
             points[i] = if clockwise {
-                [-self.points[i][1], self.points[i][0]]
-            } else {
                 [self.points[i][1], -self.points[i][0]]
+            } else {
+                [-self.points[i][1], self.points[i][0]]
             };
         }
         Block { points, ..*self }
