@@ -12,6 +12,7 @@ const BOARD_HEIGHT: i32 = 22;
 /// Type of the key.
 enum Key { LEFT, RIGHT, UP, DOWN, SP, OTHER, }
 
+/// The main.
 fn main() {
 
     let event_loop = EventLoop::new().unwrap();
@@ -122,7 +123,7 @@ impl Tetromino {
     }
 }
 
-/// A Tetromino block.
+/// A Tetrominos block.
 #[derive(Copy, Clone, Debug)]
 struct Block {
     kind: Tetromino,
@@ -173,9 +174,7 @@ impl Block {
         }
         Block { points, ..*self }
     }
-
 }
-
 
 fn index_at(x: i32, y: i32) -> usize {
     (y * BOARD_WIDTH + x) as usize
